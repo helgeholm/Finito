@@ -1,0 +1,32 @@
+[project]
+workdir = "build"
+
+[profiles]
+platform = win32, win64
+buildtype = release, debug
+compiler = gcc, clang, msvc @ win32, icc, djgpp, mingw
+syslink @ win32 | win64 = md, mt
+bitness = 32bit, 64bit
+
+[components]
+# Kataloger hvor komponentenes oppsettfiler finnes
+"frameworks/nlesdk"
+"frameworks/rfx"
+# osv
+
+[includepaths]
+"staged/boost/include/boost"
+"staged/soul/include/soul"
+"${PROGRAMFILES}/YourMom/include" @ win32
+
+[libpaths]
+"staged/boost/lib" # Disse katalogene vil antagelig ha en struktur under seg, så man trenger
+"staged/soul/lib"  # et system for at rett bygg av dette prosjektet linkes til rett bygg av
+                   # slike avhengigheter.
+
+[cppoptions]
+"/Z:wchar_t-" @ win32
+
+[cppdefines]
+"HOLA" : "BLUBB"
+"if" : "while"
