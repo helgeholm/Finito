@@ -1,43 +1,57 @@
-import Utils (trim, splitOn)
+module Profile where
 
-type ProfileFix = [String]
+import Data.Map
+import Data.Set
+import List
+
+type VariantId = String
+type ProfileId = String
+type FixedProfiles = [VariantId] -- One selected variant per profile
+
+--instance Show (FixedProfiles -> Bool) where
+--  show _ = "VariantValidityPredicate"
 
 data Variant = Variant {
-     vkey :: String,
-     values :: [String]
-} deriving (Show, Eq)
-
-data VariantNode = VariantNode {
-     variant :: Variant,
-     dependsOn :: [VariantNode]
-} deriving (Show, Eq)
+     vid :: VariantId,
+     depends :: [VariantId]
+} deriving (Show)
 
 data Profile = Profile {
      key :: String,
-     variants :: [String]
-} deriving (Show, Eq)
+     variants :: [Variant]
+} deriving (Show)
+instance Ord (Profile) where
+  compare a b = compare (key a) (key b)
+instance Eq (Profile) where
+  a == b = (key a) == (key b)
 
-profiles :: ProfileFix -> [Variant] -> [ProfileFix]
-profiles fs [] = [reverse fs]
-profiles fs (v:vs) = concat subProfiles
-  where
-    subProfiles :: [[ProfileFix]] = map (\x -> profiles (x:fs) vs) fixes
-    fixes :: [String] = map (\x -> (vkey v) ++ "=" ++ x) (values v)
+-- internal crap
 
-profiles_test = (expected == actual)
-  where
-    actual = profiles [] [Variant "A" ["1","2","3"], Variant "B" ["4","5"]]
-    expected = [["A=1","B=4"],["A=1","B=5"],["A=2","B=4"],["A=2","B=5"],["A=3","B=4"],["A=3","B=5"]
+testProfile1 = Profile "platform" [Variant "win32" [], Variant "yourmom" []]
+testProfile2 = Profile "syslink" [Variant "32bit" ["win32", "debug"]]
+testProfile3 = Profile "buildtype" [Variant "release" [], Variant "debug" []]
+testProfiles :: [Profile]
+testProfiles = [testProfile1, testProfile2, testProfile3]
 
-parse_profile :: String -> Profile
-parse_profile s = Profile pId pVariants
-  where
-    pId = trim rpId
-    pVariants = map trim $ splitOn ',' rpVariants
-    [rpId, rpVariants] = take 2 $ splitOn '=' s
+profileOf :: [Profile] -> VariantId -> ProfileId
+profileOf [] _ = undefined
+profileOf (p:ps) v = if v `elem` pvars then key p
+                                       else profileOf ps v
+  where pvars = List.map vid (variants p)
 
-test_parse_profile_simple :: Bool
-test_parse_profile_simple = (actual == expected)
-  where
-    actual = parse_profile "bitness = 32bit, 64bit"
-    expected = Profile "bitness" ["32bit", "64bit"]
+dependsOn :: [Profile] -> Profile -> [ProfileId]
+dependsOn ps p = unique dupDeps
+  where unique = (Data.Set.toList . Data.Set.fromList)
+        dupDeps = concat (List.map varDependsOn (variants p))
+        varDependsOn v = List.map (profileOf ps) (depends v)
+
+type MPP = Map ProfileId [ProfileId]
+
+mkDepGraph :: [Profile] -> MPP
+mkDepGraph ps = mkDepGraphR ps Data.Map.empty ps
+
+mkDepGraphR :: [Profile] -> MPP -> [Profile] -> MPP
+mkDepGraphR _ m [] = m
+mkDepGraphR allPs m (p:ps) = Data.Map.union this recursive
+  where this      = Data.Map.insert (key p) (dependsOn allPs p) m
+        recursive = mkDepGraphR allPs m ps
