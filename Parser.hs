@@ -5,6 +5,9 @@ import Control.Monad
 
 import Data
 
+parseRoot :: String -> [Char] -> Either ParseError [Section]
+parseRoot inName = parse root inName
+
 root = do ss <- many $ try (el >> section)
           el
           eof
@@ -92,6 +95,8 @@ eol =   try (string "\r\n")
     <|> string "\n"
 
 -- Whitespace sponges.
-ws = many (oneOf " ")            -- any number of whitespace
-ws_eol = ws >> eol               -- any number of whitespace, then EOL
-el = many $ try ws_eol           -- any number of empty lines
+ceol = do optional $ (char '#') >> (many $ noneOf "\r\n")
+          eol          -- possibly a comment, then EOL
+ws = many (oneOf " ")  -- any number of whitespace
+ws_eol = ws >> ceol    -- any number of whitespace, maybe comment, then EOL
+el = many $ try ws_eol -- any number of empty lines
