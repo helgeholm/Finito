@@ -1,0 +1,31 @@
+
+NAME             --->  [A-Za-z][A-Za-z0-9_]*
+
+STRING           --->  "\"" .* "\""
+
+ATOM             --->  NAME | STRING
+
+CONDITIONAL      --->  ATOM ("@" OR_RESTRICTOR)?
+
+OR_RESTRICTOR    --->  AND_RESTRICTOR | (OR_RESTRICTOR "|" AND_RESTRICTOR)
+
+AND_RESTRICTOR   --->  NOT_RESTRICTOR | (AND_RESTRICTOR "&" NOT_RESTRICTOR)
+
+NOT_RESTRICTOR   --->  ("!")? ATOM_RESTRICTOR
+
+ATOM_RESTRICTOR  --->  NAME | "(" OR_RESTRICTOR ")"
+
+
+
+
+ROOT             --->  SECTION*
+
+SECTION          --->  "[" NAME "]" ASSIGNS
+
+ASSIGNS          --->  ASSIGNMENT*
+
+ASSIGMENT        --->  CONDITIONAL ("=" COMMA_LIST)? "\n"
+
+COMMA_LIST       --->  CONDITIONAL ("," CONDITIONAL)*
+
+
