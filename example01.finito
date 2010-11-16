@@ -28,5 +28,5 @@ bitness = 32bit, 64bit
 "/Z:wchar_t-" @ win32
 
 [cppdefines]
-"HOLA" : "BLUBB"
-"if" : "while"
+"HOLA"="BLUBB"
+"if"="while"
