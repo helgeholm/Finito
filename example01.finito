@@ -6,7 +6,7 @@ platform = win32, win64
 buildtype = release, debug
 compiler = gcc, clang, msvc @ win32, icc, djgpp, mingw
 syslink @ win32 | win64 = md, mt
-bitness = 32bit, 64bit
+bitness = on32bit, on64bit
 
 [components]
 # Kataloger hvor komponentenes oppsettfiler finnes
