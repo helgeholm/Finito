@@ -1,3 +1,5 @@
+# Example input file, used to test the parser.
+
 [project]
 workdir = "build"
 

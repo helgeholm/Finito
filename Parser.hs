@@ -8,16 +8,17 @@ import Data
 parseRoot :: String -> [Char] -> Either ParseError [Section]
 parseRoot inName = parse root inName
 
-root = do ss <- many $ try (el >> section)
-          el
+root = do ss <- many section
           eof
           return ss
 
-section = do char '['
+section = do el
+             char '['
              n <- name
              char ']'
              ws_eol
              asses <- assignments
+             el
              return $ Section n asses
 
 assignments = many $ try (el >> assignment)
@@ -95,8 +96,8 @@ eol =   try (string "\r\n")
     <|> string "\n"
 
 -- Whitespace sponges.
-ceol = do optional $ (char '#') >> (many $ noneOf "\r\n")
-          eol          -- possibly a comment, then EOL
-ws = many (oneOf " ")  -- any number of whitespace
-ws_eol = ws >> ceol    -- any number of whitespace, maybe comment, then EOL
-el = many $ try ws_eol -- any number of empty lines
+spongy_eol = do optional $ (char '#') >> (many $ noneOf "\r\n")
+                eol
+ws = many (oneOf " ")     -- any number of whitespace
+ws_eol = ws >> spongy_eol -- any number of whitespace, otherwise ~empty
+el = many $ try ws_eol    -- any number of ~empty lines
