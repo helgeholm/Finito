@@ -1,0 +1,97 @@
+module Parser where
+
+import Text.ParserCombinators.Parsec
+import Control.Monad
+
+import Data
+
+root = do ss <- many $ try (el >> section)
+          el
+          eof
+          return ss
+
+section = do char '['
+             n <- name
+             char ']'
+             ws_eol
+             asses <- assignments
+             return $ Section n asses
+
+assignments = many $ try (el >> assignment)
+
+assignment = try proper <|> notReally where
+  proper    = do c <- cond
+                 ws
+                 char '='
+                 ws
+                 cl <- commaList
+                 ws_eol
+                 return $ ProperAssign c cl
+  notReally = do c <- cond
+                 ws_eol
+                 return $ NotReallyAssign c
+
+commaList = cond `sepBy` (char ',' >> ws)
+
+name = do x  <- letter
+          xs <- many (letter <|> digit <|> char '_')
+          return $ Name (x : xs)
+
+atom = quotedString <|> (liftM NameAtom name)
+
+quotedString = do char '"'
+                  str <- many (noneOf "\"")
+                  char '"'
+                  return $ StringAtom str
+     
+cond = try restricted <|> simple where
+  restricted = do a <- atom
+                  ws
+                  char '@'
+                  ws
+                  c <- orRestrictor
+                  return $ RestrCond a c
+  simple     = SimpleCond `liftM` atom
+
+orRestrictor = try proper <|> simple where
+  proper = do a <- andRestrictor
+              ws
+              char '|'
+              ws
+              o <- orRestrictor
+              return $ ProperOrRestrictor a o
+  simple = SimpleOrRestrictor `liftM` andRestrictor
+
+andRestrictor = try proper <|> simple where
+  proper = do n <- notRestrictor
+              ws
+              char '&'
+              ws
+              a <- andRestrictor
+              return $ ProperAndRestrictor n a
+  simple = SimpleAndRestrictor `liftM` notRestrictor
+
+notRestrictor = negate <|> posate where
+  negate = do char '!'
+              a <- innerRestrictor
+              return $ NegateRestrictor a
+  posate = PosateRestrictor `liftM` innerRestrictor
+
+innerRestrictor = paren <|> atomr where
+  paren = do char '('
+             ws
+             o <- orRestrictor
+             ws
+             char ')'
+             return $ ParenRestrictor o
+  atomr = NameRestrictor `liftM` name
+
+eol =   try (string "\r\n")
+    <|> try (string "\n\r")
+    <|> string "\r"
+    <|> string "\n"
+
+-- Whitespace sponges.
+ws = many (oneOf " ")            -- any number of whitespace
+ws_eol = ws >> eol               -- any number of whitespace, then EOL
+el = many $ try ws_eol           -- any number of empty lines
