@@ -2,6 +2,7 @@ import IO
 
 import Data
 import Parser
+import Permutations
 
 readRoot :: IO [Section]
 readRoot = do
@@ -12,4 +13,5 @@ readRoot = do
 
 main = do
   root <- readRoot
-  print root
+  derp <- permuteTest root
+  print derp
