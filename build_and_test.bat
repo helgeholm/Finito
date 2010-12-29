@@ -1,5 +1,5 @@
 @echo off
-ghc -fglasgow-exts --make ErrorMonad.hs Data.hs Permutations.hs Parser.hs TestRun.hs -o testrun.exe && goto yay
+ghc -fglasgow-exts --make Data.hs Permutations.hs Parser.hs TestRun.hs -o testrun.exe && goto yay
 goto boo
 :yay
 echo Parsing example01.finito ...
