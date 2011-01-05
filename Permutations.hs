@@ -15,6 +15,10 @@ permuteTest ss = do
   let (Section (Name n) _) = profiles
   return [n]
 
+-- Given a set of defined variants and a condition, is the condition valid?
+valid :: [Name] -> Cond -> Bool
+valid = undefined
+
 ----------------------------------
 -- TEST DATA
 
@@ -24,8 +28,8 @@ nameCond = SimpleCond . NameAtom . Name
 aName = NameAtom . Name
 
 -- test data
-sampleProfiles :: Section
-sampleProfiles = Section (Name "profiles") [
+sampleProfiles :: [Assign]
+sampleProfiles = [
   (ProperAssign (nameCond "color") [
       nameCond "red",
       nameCond "white"]),
