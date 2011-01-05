@@ -5,7 +5,9 @@ import Control.Monad
 
 import Data
 
-parseRoot :: String -> [Char] -> Either ParseError [Section]
+type SourceId = String
+
+parseRoot :: SourceId -> [Char] -> Either ParseError [Section]
 parseRoot inName = parse root inName
 
 root = do ss <- many section
