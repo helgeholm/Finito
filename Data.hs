@@ -54,3 +54,6 @@ instance Show OrRestrictor where
 instance Show Cond where
   show (SimpleCond a)  = show a
   show (RestrCond a o) = (show a) ++ " @ " ++ (show o)
+
+instance Eq Name where
+  (Name a) == (Name b) = a == b
