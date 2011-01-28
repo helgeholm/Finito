@@ -7,8 +7,11 @@ import Data
 
 type SourceId = String
 
-parseRoot :: SourceId -> [Char] -> Either ParseError [Section]
-parseRoot inName = parse root inName
+parseRoot :: SourceId -> [Char] -> Either ParseError Configuration
+parseRoot inName stream =
+  case (parse root inName stream) of
+    Left err -> Left err
+    Right ss -> Right $ Configuration inName ss
 
 root = do ss <- many section
           eof

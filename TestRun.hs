@@ -4,7 +4,7 @@ import Data
 import Parser
 import Permutations
 
-readRoot :: IO [Section]
+readRoot :: IO Configuration
 readRoot = do
   dataz <- getContents
   case parseRoot "<stdin>" dataz of
@@ -13,5 +13,5 @@ readRoot = do
 
 main = do
   root <- readRoot
-  derp <- permuteTest root
-  print derp
+  roots <- permute root
+  putStr $ show_configurations roots

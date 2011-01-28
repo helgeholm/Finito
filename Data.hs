@@ -2,6 +2,7 @@ module Data where
 
 import List (intersperse)
 
+data Configuration = Configuration String [Section]
 data Name = Name String
 data Section = Section Name [Assign]
 data Cond = SimpleCond Atom
@@ -19,14 +20,19 @@ data Assign = NotReallyAssign Cond
 data Atom = NameAtom Name
           | StringAtom String
 
+instance Show Configuration where
+  show (Configuration name ss) = name ++ "\n" ++ uLine ++ "\n" ++ show_ss
+    where show_ss = concat $ intersperse "\n" (map show ss)
+          uLine = take (length name) (repeat '=')
+
 instance Show Assign where
   show (NotReallyAssign c) = show c
   show (ProperAssign c cl) = (show c) ++ " = " ++ clist where
     clist = concat $ intersperse ", " $ map show cl
 
 instance Show Section where
-  show (Section n as) = "{" ++ (show n) ++ ": " ++ assigns ++ "}" where
-    assigns = concat $ intersperse "; " $ map show as
+  show (Section n as) = "[" ++ (show n) ++ "]\n" ++ assigns ++ "\n" where
+    assigns = concat $ intersperse "\n" $ map show as
 
 instance Show Name where
   show (Name n) = n

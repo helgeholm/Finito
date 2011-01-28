@@ -1,11 +1,19 @@
 module Permutations where
 
 import Data
-import Control.Monad.List
+import Control.Monad
+import List (intersperse)
+
+-- Given a full configuration, yeild all valid configuration permutations.
+permute :: (Monad a) => Configuration -> a [Configuration]
+permute c@(Configuration _ ss) = do
+  (Section _ profiles) <- find ss "profiles"
+  let perm = permute_profiles profiles
+  return $ map (\p -> constrain_configuration p c) perm
 
 -- Yield all valid profiles, assuming [Assign] is the profile axes.  Axises?  Axii?
-permute :: [Assign] -> [[Name]]
-permute as =
+permute_profiles :: [Assign] -> [[Name]]
+permute_profiles as =
   filter (profilesFit as) selections
   where selections :: [[Name]] 
         selections = zeroOrOneFromEach [] groupedNames
@@ -17,11 +25,20 @@ permute as =
         extractName (RestrCond (NameAtom n) _) = [n]
         extractName _                          = []
 
+show_configurations :: [Configuration] -> String
+show_configurations cs =
+  concat $ intersperse "\n\n" (map show cs)
+
+constrain_configuration :: [Name] -> Configuration -> Configuration
+constrain_configuration defs (Configuration name ss) =
+  let ssc = map (constrain_section defs) ss in
+  Configuration (name ++ " " ++ (show defs)) ssc
+
 -- Apply profile to all conditionals and return conditional-free section.
-constrain_section :: (Monad m) => [Name] -> Section -> m Section
-constrain_section defs (Section name assigns) = do
-  let ac = concat $ map (constrain_assign defs) assigns
-  return $ Section name ac
+constrain_section :: [Name] -> Section -> Section
+constrain_section defs (Section name assigns) =
+  let ac = concat $ map (constrain_assign defs) assigns in
+  Section name ac
 
 constrain_cond :: (Monad m) => [Name] -> Cond -> m Cond
 constrain_cond defs a@(SimpleCond _) = return a
@@ -45,14 +62,8 @@ zeroOrOneFromEach acc (g:gs) = x ++ xs
   where x = zeroOrOneFromEach acc gs
         xs = concat $ map (\x -> zeroOrOneFromEach (x:acc) gs) g
 
-permuteTest :: (Monad a) => [Section] -> a [String]
-permuteTest ss = do
-  profiles <- find ss "profiles"
-  let (Section (Name n) _) = profiles
-  return [n]
-
 find :: (Monad a) => [Section] -> String -> a Section
-find [] id =
+find [] id = 
   fail ("no section named " ++ id)
 find (s@(Section (Name name) _):ss) id =
   if name == id then return s
