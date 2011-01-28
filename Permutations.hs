@@ -1,6 +1,7 @@
 module Permutations where
 
 import Data
+import Control.Monad.List
 
 permute :: [Assign] -> [[Name]]
 permute as =
@@ -14,6 +15,27 @@ permute as =
         extractName (SimpleCond (NameAtom n))  = [n]
         extractName (RestrCond (NameAtom n) _) = [n]
         extractName _                          = []
+
+-- Apply profile to all conditionals and return conditional-free section.
+constrain_section :: (Monad m) => [Name] -> Section -> m Section
+constrain_section defs (Section name assigns) = do
+  let ac = concat $ map (constrain_assign defs) assigns
+  return $ Section name ac
+
+constrain_cond :: (Monad m) => [Name] -> Cond -> m Cond
+constrain_cond defs a@(SimpleCond _) = return a
+constrain_cond defs (RestrCond a o)  =
+               if (evalOr defs o) then return (SimpleCond a)
+                                  else fail "condition invalid by defs"
+
+constrain_assign :: (Monad m) => [Name] -> Assign -> m Assign
+constrain_assign defs (NotReallyAssign c) = do
+  cc <- constrain_cond defs c
+  return $ NotReallyAssign cc
+constrain_assign defs (ProperAssign c vs) = do
+  cc <- constrain_cond defs c
+  let vcs = concat $ map (constrain_cond defs) vs
+  return $ ProperAssign cc vcs
 
 -- Returns all possible combinations.
 zeroOrOneFromEach :: [a] -> [[a]] -> [[a]]
@@ -37,17 +59,19 @@ find (s@(Section (Name name) _):ss) id =
 
 -- Given a set of defined variants and a condition, is the condition valid?
 valid :: [Name] -> Cond -> Bool
-valid _ (SimpleCond _) =
-  True
-valid defs (RestrCond _ or) = evalOr or
-  where evalOr (SimpleOrRestrictor a) = evalAnd a
-        evalOr (ProperOrRestrictor a o) = (evalAnd a) || (evalOr o)
+valid _ (SimpleCond _) = True
+valid defs (RestrCond _ o) = evalOr defs o
+
+evalOr :: [Name] -> OrRestrictor -> Bool
+evalOr defs = evalOr_
+  where evalOr_ (SimpleOrRestrictor a) = evalAnd a
+        evalOr_ (ProperOrRestrictor a o) = (evalAnd a) || (evalOr_ o)
         evalAnd (SimpleAndRestrictor n) = evalNot n
         evalAnd (ProperAndRestrictor n a) = (evalNot n) && (evalAnd a)
         evalNot (NegateRestrictor inner) = (not . evalInner) inner
         evalNot (PosateRestrictor inner) = evalInner inner
         evalInner (NameRestrictor n) = n `elem` defs
-        evalInner (ParenRestrictor o) = evalOr o
+        evalInner (ParenRestrictor o) = evalOr_ o
 
 -- Do we have 1 and only 1 valid definition from this profile?
 profileFit :: [Name] -> Assign -> Bool
@@ -97,6 +121,15 @@ test_valid = and [
                      (ProperOrRestrictor (a_posate "herp") (o_posate "derp"))
 
 -- for manual testing
+sampleAssign :: Assign
+sampleAssign = head $ tail sampleProfiles
+
+sampleSection :: Section
+sampleSection = Section (Name "SampleSection") sampleProfiles
+
+sampleProfile :: [Name]
+sampleProfile = [(Name "apple"), (Name "white")]
+
 sampleProfiles :: [Assign]
 sampleProfiles = [
   (ProperAssign (nameCond "color") [
