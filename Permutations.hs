@@ -3,6 +3,7 @@ module Permutations where
 import Data
 import Control.Monad.List
 
+-- Yield all valid profiles, assuming [Assign] is the profile axes.  Axises?  Axii?
 permute :: [Assign] -> [[Name]]
 permute as =
   filter (profilesFit as) selections
